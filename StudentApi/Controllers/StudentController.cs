@@ -35,9 +35,9 @@ namespace StudentApi.Controllers
         }
 
         [HttpGet("range")]
-        public ActionResult<float[]> GetGpaRange()
+        public ActionResult<List<float>> GetGpaRange()
         {
-            float[] range = _context.GetGpaRange();
+            List<float> range = _context.GetGpaRange();
             if (range == null)
                 return NotFound();
             return range;
@@ -54,9 +54,9 @@ namespace StudentApi.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(string id)
         {
-            bool success = _context.DeleteStudent(id);
+            int rowsDeleted = _context.DeleteStudent(id);
 
-            if (!success)
+            if (rowsDeleted == 0)
                 return NotFound();
 
             return NoContent();

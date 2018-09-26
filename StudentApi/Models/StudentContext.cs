@@ -8,13 +8,19 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System;
 using System.Linq;
+using System.Data;
+using MySql.Data;
+using MySql.Data.MySqlClient;
+using Dapper;
+
 
 namespace StudentApi.Models
 {
     public class StudentContext : DbContext
     {
+        string connectionString = "Server=localhost; Database=studentdb; UID=testuser; Password=dummypass864";
+
         public StudentContext(DbContextOptions<StudentContext> options)
             : base(options)
         {
@@ -22,16 +28,13 @@ namespace StudentApi.Models
 
         public List<Student> GetAllStudents()
         {
-            string[] data = File.ReadAllLines(@"students.csv");
+            string sql = "SELECT * FROM student";
             List<Student> students = new List<Student>();
-            foreach (string line in data)
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
             {
-                Student student = new Student();
-                string[] splitLine = line.Split(',');
-                student.Id = splitLine[0];
-                student.Name = splitLine[1];
-                student.Gpa = float.Parse(splitLine[2], CultureInfo.InvariantCulture.NumberFormat);
-                students.Add(student);
+                connection.Open();
+                students = connection.Query<Student>(sql).ToList();
+                connection.Close();
             }
 
             if (students.Count == 0)
@@ -41,57 +44,59 @@ namespace StudentApi.Models
 
         public Student GetStudent(string id)
         {
-            List<Student> students = GetAllStudents();
-            int index = students.FindIndex(student => student.Id == id);
+            string sql = $"SELECT * FROM student WHERE id={id}";
+            List<Student> student = new List<Student>();
 
-            if (index == -1)
-                return null;
-            return students[index];
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            {
+                connection.Open();
+                student = connection.Query<Student>(sql).ToList();
+                connection.Close();
+            }
+
+            return student[0];
         }
 
-        public float[] GetGpaRange()
+        public List<float> GetGpaRange()
         {
-            List<Student> students = GetAllStudents();
-            if (students == null)
-                return null;
+            string sql = "SELECT MAX(gpa), MIN(gpa) FROM student";
+            List<float> gpas = new List<float>();
 
-            float lowGpa = students.Min(student => student.Gpa);
-            float highGpa = students.Max(student => student.Gpa);
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            {
+                connection.Open();
+                gpas = connection.Query<float>(sql).ToList();
+                connection.Close();
+            }
 
-            return new float[] { highGpa, lowGpa };
+            return gpas;
         }
 
         public void AddStudent(Student student)
         {
-            List<Student> students = GetAllStudents();
-            students.Add(student);
+            string sql = "INSERT INTO student VALUES (@id, @name, @gpa)";
 
-            StreamWriter file = new StreamWriter(@"students.csv", false);
-            foreach (Student stu in students)
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
             {
-                file.WriteLine(stu.ToString());
+                connection.Open();
+                connection.Execute(sql, student);
+                connection.Close();
             }
-            file.Close();
         }
 
-        public bool DeleteStudent(string id)
+        public int DeleteStudent(string id)
         {
-            List<Student> students = GetAllStudents();
-            bool deleted = false;
-            int index = students.FindIndex(student => student.Id == id);
-            if (index == -1)
-                return deleted;
-            students.RemoveAt(index);
+            string sql = $"DELETE FROM student WHERE id = {id}";
+            int rowsDeleted = 0;
 
-            StreamWriter file = new StreamWriter(@"students.csv", false);
-            foreach (Student student in students)
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
             {
-                file.WriteLine(student.ToString());
+                connection.Open();
+                rowsDeleted = connection.Execute(sql);
+                connection.Close();
             }
-            file.Close();
-            deleted = true;
 
-            return deleted;
+            return rowsDeleted;
         }
     }
 }
