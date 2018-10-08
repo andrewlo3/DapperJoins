@@ -17,18 +17,36 @@ namespace StudentApi.Controllers
         }
 
         [HttpGet]
-        public ActionResult<List<Student>> GetAll()
+        public ActionResult<List<Student>> GetStudents()
         {
-            List<Student> stu = _context.GetAllStudents();
+            List<Student> stu = _context.GetStudents();
             if (stu == null)
                 return NotFound();
             return stu;
         }
 
-        [HttpGet("{id}", Name = "GetStudent")]
-        public ActionResult<Student> GetById(string id)
+        [HttpGet("inv")]
+        public ActionResult<List<Invoice>> GetInvoices()
         {
-            Student stu = _context.GetStudent(id);
+            List<Invoice> invoices = _context.GetInvoices();
+            if (invoices == null)
+                return NotFound();
+            return invoices;
+        }
+
+        [HttpGet("cusInv")]
+        public ActionResult<List<Customer>> GetCustomers()
+        {
+            List<Customer> customers = _context.GetCustomers();
+            if (customers == null)
+                return NotFound();
+            return customers;
+        }
+
+        [HttpGet("{id}", Name = "GetStudent")]
+        public ActionResult<Student> GetStudentById(string id)
+        {
+            Student stu = _context.GetStudentById(id);
             if (stu == null)
                 return NotFound();
             return stu;
